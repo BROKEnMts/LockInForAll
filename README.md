@@ -1,4 +1,3 @@
--- LockInForAll - Sistema de mira inteligente com interface móvel
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -67,43 +66,45 @@ switchCorner.CornerRadius = UDim.new(0, 6)
 
 -- Controle
 local lockInEnabled = false
+local lockedTarget = nil
 
 toggleSwitch.MouseButton1Click:Connect(function()
 	lockInEnabled = not lockInEnabled
 	toggleSwitch.Text = lockInEnabled and "ON" or "OFF"
 	toggleSwitch.BackgroundColor3 = lockInEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(60, 60, 60)
+
+	if lockInEnabled then
+		-- Seleciona alvo ao ativar
+		lockedTarget = nil
+
+		local closest, shortestDist = nil, math.huge
+
+		for _, otherPlayer in pairs(Players:GetPlayers()) do
+			if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("Torso") then
+				local pos, onScreen = camera:WorldToViewportPoint(otherPlayer.Character.Torso.Position)
+				if onScreen then
+					local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)).Magnitude
+					if dist < shortestDist then
+						shortestDist = dist
+						closest = otherPlayer.Character.Torso
+					end
+				end
+			end
+		end
+
+		lockedTarget = closest
+	else
+		lockedTarget = nil
+	end
 end)
 
 toggleButton.MouseButton1Click:Connect(function()
 	menu.Visible = not menu.Visible
 end)
 
--- Função de busca de inimigo mais próximo do centro da tela
-local function getClosestEnemyToCenter()
-	local closest, shortestDist = nil, math.huge
-
-	for _, otherPlayer in pairs(Players:GetPlayers()) do
-		if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
-			local pos, onScreen = camera:WorldToViewportPoint(otherPlayer.Character.HumanoidRootPart.Position)
-			if onScreen then
-				local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)).Magnitude
-				if dist < shortestDist then
-					shortestDist = dist
-					closest = otherPlayer.Character.HumanoidRootPart
-				end
-			end
-		end
-	end
-
-	return closest
-end
-
--- Loop de Lock-In
+-- Mira fixa no alvo selecionado
 RunService.RenderStepped:Connect(function()
-	if lockInEnabled then
-		local target = getClosestEnemyToCenter()
-		if target then
-			camera.CFrame = CFrame.new(camera.CFrame.Position, target.Position + Vector3.new(0, 1.5, 0))
-		end
+	if lockInEnabled and lockedTarget then
+		camera.CFrame = CFrame.new(camera.CFrame.Position, lockedTarget.Position + Vector3.new(0, 1, 0))
 	end
 end)
