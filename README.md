@@ -1,10 +1,8 @@
--- LockInForAll - Atualizado para R6 e travamento fixo
+-- LockInForAll - Suporte R6/R15 + ignora aliados e mortos, aceita NPCs
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local camera = workspace.CurrentCamera
 local player = Players.LocalPlayer
-local mouse = player:GetMouse()
 
 -- Interface
 local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -69,25 +67,44 @@ switchCorner.CornerRadius = UDim.new(0, 6)
 local lockInEnabled = false
 local lockedTarget = nil
 
+-- Função para obter a parte central do corpo
+local function getTargetPart(character)
+	if character:FindFirstChild("UpperTorso") then
+		return character.UpperTorso
+	elseif character:FindFirstChild("Torso") then
+		return character.Torso
+	end
+end
+
+-- Função para verificar se personagem é válido
+local function isValidTarget(character)
+	local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return false end
+
+	local plr = Players:GetPlayerFromCharacter(character)
+	if plr and plr.Team == player.Team then return false end
+
+	return getTargetPart(character) ~= nil
+end
+
 toggleSwitch.MouseButton1Click:Connect(function()
 	lockInEnabled = not lockInEnabled
 	toggleSwitch.Text = lockInEnabled and "ON" or "OFF"
 	toggleSwitch.BackgroundColor3 = lockInEnabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(60, 60, 60)
 
 	if lockInEnabled then
-		-- Seleciona alvo ao ativar
 		lockedTarget = nil
-
 		local closest, shortestDist = nil, math.huge
 
-		for _, otherPlayer in pairs(Players:GetPlayers()) do
-			if otherPlayer ~= player and otherPlayer.Character and otherPlayer.Character:FindFirstChild("Torso") then
-				local pos, onScreen = camera:WorldToViewportPoint(otherPlayer.Character.Torso.Position)
+		for _, obj in pairs(workspace:GetDescendants()) do
+			if obj:IsA("Model") and isValidTarget(obj) then
+				local part = getTargetPart(obj)
+				local pos, onScreen = camera:WorldToViewportPoint(part.Position)
 				if onScreen then
 					local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)).Magnitude
 					if dist < shortestDist then
 						shortestDist = dist
-						closest = otherPlayer.Character.Torso
+						closest = part
 					end
 				end
 			end
@@ -106,6 +123,6 @@ end)
 -- Mira fixa no alvo selecionado
 RunService.RenderStepped:Connect(function()
 	if lockInEnabled and lockedTarget then
-		camera.CFrame = CFrame.new(camera.CFrame.Position, lockedTarget.Position + Vector3.new(0, 1, 0))
+		camera.CFrame = CFrame.new(camera.CFrame.Position, lockedTarget.Position)
 	end
 end)
