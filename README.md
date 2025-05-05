@@ -1,4 +1,4 @@
--- LockInForAll - Corrigido e otimizado
+-- LockInForAll - Foco em players e NPCs, sem filtro de time
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local camera = workspace.CurrentCamera
@@ -78,12 +78,6 @@ end
 local function isValidTarget(character)
 	local humanoid = character:FindFirstChildWhichIsA("Humanoid")
 	if not humanoid or humanoid.Health <= 0 then return false end
-
-	local plr = Players:GetPlayerFromCharacter(character)
-	if plr and plr.Team ~= nil and plr.Team == player.Team then
-		return false
-	end
-
 	return getTargetPart(character) ~= nil
 end
 
