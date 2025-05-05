@@ -80,7 +80,9 @@ local function isValidTarget(character)
 	if not humanoid or humanoid.Health <= 0 then return false end
 
 	local plr = Players:GetPlayerFromCharacter(character)
-	if plr and plr.Team == player.Team then return false end
+	if plr and plr.Team ~= nil and plr.Team == player.Team then
+		return false
+	end
 
 	return getTargetPart(character) ~= nil
 end
