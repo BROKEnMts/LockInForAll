@@ -1,4 +1,4 @@
--- LockInForAll - Foco em players e NPCs, sem filtro de time
+-- LockInForAll - Mira em players e NPCs, compatível com R6 e R15
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local camera = workspace.CurrentCamera
@@ -118,7 +118,7 @@ toggleButton.MouseButton1Click:Connect(function()
 end)
 
 RunService.RenderStepped:Connect(function()
-	if lockInEnabled and lockedTarget then
+	if lockInEnabled and lockedTarget and lockedTarget.Parent and lockedTarget:IsDescendantOf(workspace) then
 		camera.CFrame = CFrame.new(camera.CFrame.Position, lockedTarget.Position)
 	end
 end)
