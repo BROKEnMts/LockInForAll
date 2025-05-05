@@ -1,4 +1,4 @@
--- LockInForAll - Suporte R6/R15 + ignora aliados e mortos, aceita NPCs
+-- LockInForAll - Corrigido e otimizado
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local camera = workspace.CurrentCamera
@@ -67,7 +67,6 @@ switchCorner.CornerRadius = UDim.new(0, 6)
 local lockInEnabled = false
 local lockedTarget = nil
 
--- Função para obter a parte central do corpo
 local function getTargetPart(character)
 	if character:FindFirstChild("UpperTorso") then
 		return character.UpperTorso
@@ -76,7 +75,6 @@ local function getTargetPart(character)
 	end
 end
 
--- Função para verificar se personagem é válido
 local function isValidTarget(character)
 	local humanoid = character:FindFirstChildWhichIsA("Humanoid")
 	if not humanoid or humanoid.Health <= 0 then return false end
@@ -94,16 +92,19 @@ toggleSwitch.MouseButton1Click:Connect(function()
 
 	if lockInEnabled then
 		lockedTarget = nil
-		local closest, shortestDist = nil, math.huge
+		local closest, bestScore = nil, math.huge
 
 		for _, obj in pairs(workspace:GetDescendants()) do
 			if obj:IsA("Model") and isValidTarget(obj) then
 				local part = getTargetPart(obj)
 				local pos, onScreen = camera:WorldToViewportPoint(part.Position)
 				if onScreen then
-					local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)).Magnitude
-					if dist < shortestDist then
-						shortestDist = dist
+					local screenDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)).Magnitude
+					local worldDist = (camera.CFrame.Position - part.Position).Magnitude
+					local combinedScore = screenDist + worldDist * 0.5
+
+					if combinedScore < bestScore then
+						bestScore = combinedScore
 						closest = part
 					end
 				end
@@ -120,7 +121,6 @@ toggleButton.MouseButton1Click:Connect(function()
 	menu.Visible = not menu.Visible
 end)
 
--- Mira fixa no alvo selecionado
 RunService.RenderStepped:Connect(function()
 	if lockInEnabled and lockedTarget then
 		camera.CFrame = CFrame.new(camera.CFrame.Position, lockedTarget.Position)
