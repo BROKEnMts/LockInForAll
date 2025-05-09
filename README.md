@@ -88,20 +88,25 @@ toggleSwitch.MouseButton1Click:Connect(function()
 
 	if lockInEnabled then
 		lockedTarget = nil
-		local closest, bestScore = nil, math.huge
+		local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+		local boxSize = Vector2.new(200, 200) -- Tamanho do quadrado imaginário
+		local closest, closestDist = nil, math.huge
 
 		for _, obj in pairs(workspace:GetDescendants()) do
 			if obj:IsA("Model") and isValidTarget(obj) then
 				local part = getTargetPart(obj)
 				local pos, onScreen = camera:WorldToViewportPoint(part.Position)
-				if onScreen then
-					local screenDist = (Vector2.new(pos.X, pos.Y) - Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)).Magnitude
-					local worldDist = (camera.CFrame.Position - part.Position).Magnitude
-					local combinedScore = screenDist + worldDist * 0.5
 
-					if combinedScore < bestScore then
-						bestScore = combinedScore
-						closest = part
+				if onScreen then
+					local screenPos = Vector2.new(pos.X, pos.Y)
+					local delta = screenPos - center
+
+					if math.abs(delta.X) <= boxSize.X / 2 and math.abs(delta.Y) <= boxSize.Y / 2 then
+						local dist = delta.Magnitude
+						if dist < closestDist then
+							closestDist = dist
+							closest = part
+						end
 					end
 				end
 			end
@@ -119,6 +124,9 @@ end)
 
 RunService.RenderStepped:Connect(function()
 	if lockInEnabled and lockedTarget and lockedTarget.Parent and lockedTarget:IsDescendantOf(workspace) then
-		camera.CFrame = CFrame.new(camera.CFrame.Position, lockedTarget.Position)
+		local pos, onScreen = camera:WorldToViewportPoint(lockedTarget.Position)
+		if onScreen then
+			camera.CFrame = CFrame.new(camera.CFrame.Position, lockedTarget.Position)
+		end
 	end
 end)
